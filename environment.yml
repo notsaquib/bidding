@@ -1,0 +1,16 @@
+name: PG
+channels:
+  - conda-forge
+  - defaults
+  - willkessler
+dependencies:
+  - python=3.9
+  - jupyter
+  - notebook
+  - matplotlib
+  - scipy
+  - casadi
+  - scikit-learn
+  - jupytergraffiti
+  - pandas
+  - tensorflow

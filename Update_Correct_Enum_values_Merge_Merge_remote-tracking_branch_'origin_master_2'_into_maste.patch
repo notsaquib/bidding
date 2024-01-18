@@ -1,0 +1,1400 @@
+Subject: [PATCH] Update
+Correct Enum values
+Merge
+Merge remote-tracking branch 'origin/master_2' into master_2
+Refactor
+---
+Index: CONFIG.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/CONFIG.py b/CONFIG.py
+--- a/CONFIG.py	(revision a0b0b07ba9e4de6e69088af6c9fbeb82e0e179f0)
++++ b/CONFIG.py	(revision 384c08cf8c843b0da92809d3b82ea6ea5dca5d97)
+@@ -2,19 +2,32 @@
+ 
+ # imports
+ from enum import Enum, auto
+-from datetime import timedelta, datetime
++from datetime import datetime
++from configparser import ConfigParser
+ import numpy as np
+ 
++import CONFIG_PROFILES
++
++# Read simulation parameters from a config.ini
++config_sim = ConfigParser()
++config_sim.read('CONFIG_PROFILES.ini')
++test_profile = input('TEST PROFILE: ')
++if test_profile is  'TEST_LONG':
++    pass
++# try:
++#     sim_profile = config[]
++
+ # Simulation Parameters
+ N_MACHINES = 100
+ N_JOBS = 10000
+ REF_DATETIME = '20230109100000000000'
+-TIME_RELEASE_MAX = 50  # in units of TIME_INT_INTERVAL
+-TIME_DEADLINE_MAX = 100  # in units of TIME_INT_INTERVAL
+-JOB_ENERGY_MIN = 50  # in kWh
+-JOB_ENERGY_MAX = 200  # in kWh
+-MARGIN_PRICE_TIME = 24  # in units of TIME_INT_INTERVAL used for extra price info after job due-time
+-PRIORITY_LEVELS = 3  # number of priority levels including zero. The lower priority value, the higher the priority.
++N_AGENTS = 20  # Maximum number of agents created per Platform
++
++# Priority
++# number of priority levels including zero. The lower priority value, the higher the priority.
++PRIORITY_LEVELS = 3
++# Default priority level
++PRIORITY_DEFAULT = PRIORITY_LEVELS - 1
+ 
+ # constants
+ # PlatformEntity IDs
+@@ -28,13 +41,15 @@
+ NAME_PLATFORM_ENTITY = "PE"
+ NAME_ZERO_FILL = int(np.log10(N_JOBS)) + 1 if N_JOBS >= N_MACHINES else int(np.log10(N_MACHINES)) + 1
+ 
+-# Default priority level
+-PRIORITY_DEFAULT = PRIORITY_LEVELS - 1
+-
+-# Formatting datetime instances
+-TIME_KEY_FORMAT = "%Y%m%d%H%M%S%f"
++# Time Parameters
++TIME_KEY_FORMAT = "%Y%m%d%H%M%S%f"  # Formatting datetime instances
+ TIME_INTERVAL = 60  # time slot size in minutes
+ TIME_INT_INTERVAL = 60  # in minutes
++TIME_RELEASE_MAX = 50  # in units of TIME_INT_INTERVAL
++TIME_DEADLINE_MAX = 100  # in units of TIME_INT_INTERVAL
++JOB_ENERGY_MIN = 50  # in kWh
++JOB_ENERGY_MAX = 200  # in kWh
++MARGIN_PRICE_TIME = 24  # in units of TIME_INT_INTERVAL used for extra price info after job due-time
+ 
+ # Initial number of buckets in all the Hash Tables used
+ N_INITIAL_CAPACITY = 50
+@@ -46,9 +61,6 @@
+ METHOD_SUCCESS = 0
+ METHOD_FAILURE = 1
+ 
+-# Maximum number of agents created per Platform
+-N_AGENTS = 20
+-
+ # Constant to control logging to the console
+ LOGGING_CONSOLE_ALLOWED = False
+ 
+@@ -56,10 +68,10 @@
+ # Job Datapoint fields
+ # ENERGY_DEMAND, TIME_READY, TIME_DEADLINE, TIME_PROCESSING, PRIORITY
+ class JobRecField(Enum):
+-    JOB_ID = auto
+-    PRIORITY = auto
+-    STATUS = auto
+-    DATA = auto
++    JOB_ID = "JOB_ID"
++    PRIORITY = "PRIORITY"
++    STATUS = "STATUS"
++    DATA = "DATA"
+ 
+ 
+ LIST_JOB_RECORD_FIELDS = list(JobRecField._member_map_.keys())
+@@ -78,8 +90,8 @@
+ 
+ # job status enumeration
+ class JobStatus(Enum):
+-    ENERGY_NEEDED = auto
+-    ENERGY_RESERVED = auto
++    ENERGY_NEEDED = "ENERGY_NEEDED"
++    ENERGY_RESERVED = "ENERGY_RESERVED"
+ 
+ 
+ # ENUM_JOB_CONSTRAINTS = Enum('Job_Status', ['ENERGY_NEEDED', 'ENERGY_RESERVED'])
+@@ -113,24 +125,8 @@
+ 
+ 
+ # Function to create list of times between start and end time using TIME_INTERVAL
+-# reference: https://stackoverflow.com/questions/40815648/get-all-the-times-in-between-two-datetime-in-list
+ def create_time_list(time_start, time_end):
+-    # generator for use in time_list generation loop
+-    # def per_delta(start, end, delta):
+-    #     curr = start
+-    #     while curr <= end:
+-    #         yield curr
+-    #         curr += delta
+-    #
+-    # # convert times from string to datetime instances
+-    # start_time = datetime.strptime(time_start, TIME_KEY_FORMAT)
+-    # end_time = datetime.strptime(time_end, TIME_KEY_FORMAT) + timedelta(minutes=MARGIN_PRICE_TIME * TIME_INT_INTERVAL)
+-
+-    # loop to generate time_list
+-    # time should be constrained to HH:00 time using REF_DATETIME
+     time_list = []
+-    # for time in per_delta(start_time, end_time, timedelta(minutes=TIME_INTERVAL)):
+-    #     time_list.append(time.strftime(TIME_KEY_FORMAT))
+ 
+     delta_intervals = int((time_end - time_start) / 3600)
+     for i in range(delta_intervals):
+Index: Machine.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/Machine.py b/Machine.py
+--- a/Machine.py	(revision fbb4a09593098ce0b44030585375f2e5f525c34a)
++++ b/Machine.py	(revision 3bdb91a3702801913dbedf55eb97a49b5c28ab59)
+@@ -6,7 +6,6 @@
+ from MachineAgentHandler import MachineAgentHandler
+ from MachineEventListener import MachineEventListener
+ from MachineRecordKeeper import MachineRecordKeeper
+-from MachineScheduleGenerator import MachineScheduleGenerator
+ from PlatfromHashTable import PlatformHashTable
+ from PlatformEntity import PlatformEntity
+ 
+@@ -20,7 +19,6 @@
+         self.events_listener = MachineEventListener(self)
+         self.agents_handler = MachineAgentHandler(self)
+         self.records_keeper = MachineRecordKeeper(self)
+-        self.strategizer = MachineScheduleGenerator(self)
+ 
+         # Tables for shadowing agent requests
+         self.price_requests_table = PlatformHashTable()
+@@ -65,7 +63,6 @@
+ 
+     def on_estimation_added(self, machine_event):
+         print("Step 1 and 2 complete")
+-        # TODO: Add job to record of non-scheduled jobs
+         pass
+ 
+     # function to register machine with platform
+Index: MachineScheduleGenerator.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/MachineScheduleGenerator.py b/MachineScheduleGenerator.py
+--- a/MachineScheduleGenerator.py	(revision fbb4a09593098ce0b44030585375f2e5f525c34a)
++++ b/MachineScheduleGenerator.py	(revision 3bdb91a3702801913dbedf55eb97a49b5c28ab59)
+@@ -1,29 +1,21 @@
+-from datetime import datetime, timedelta
++from datetime import datetime
+ 
+ import CONFIG
+-from CONFIG import JobConstraint
+ from DataPoint import JobDataPoint, EstimationDataPoint
+ 
+-import matplotlib.pyplot as plt
+-from SchedulingStrategies import EmpiricalScheduling, PyomoScheduling
+ 
++class MachineScheduleGenerator():
++    def __init__(self, job: JobDataPoint, estimates_dp: EstimationDataPoint):
++        self.job = job
++        self.estimates_dp = estimates_dp
+ 
+-class MachineScheduleGenerator:
+-    def __init__(self, machine):
+-        self.machine = machine
+-        self.jobs_record = machine.records_keeper.jobs_record
+-        self.jobs = {}
+-        self.schedules = {}
+-        # self.job = job
+-        # self.estimates_dp = estimates_dp
+-        #
+-        # self.times = self.estimates_dp.periods_start
+-        # self.prices = self.estimates_dp.prices
+-        # self.prices_dict = {self.times[i]: self.prices[i] for i in range(len(self.times))}
+-        #
+-        # self.time_ready = datetime.strptime(self.job.constraints[JobConstraint.TIME_READY], CONFIG.TIME_KEY_FORMAT)
+-        # self.time_deadline = datetime.strptime(self.job.constraints[JobConstraint.TIME_DEADLINE], CONFIG.TIME_KEY_FORMAT)
+-        # self.time_processing = datetime.timedelta(minutes=self.job.constraints['TIME_PROCESSING'])
++        self.times = self.estimates_dp.periods_start
++        self.prices = self.estimates_dp.prices
++        self.prices_dict = {self.times[i]: self.prices[i] for i in range(len(self.times))}
++
++        self.time_ready = datetime.strptime(self.job.constraints[JobConstraint.TIME_READY], CONFIG.TIME_KEY_FORMAT)
++        self.time_deadline = datetime.strptime(self.job.constraints[JobConstraint.TIME_DEADLINE], CONFIG.TIME_KEY_FORMAT)
++        self.time_processing = datetime.timedelta(minutes=self.job.constraints['TIME_PROCESSING'])
+ 
+         # TODO: initialize with function
+         self.alpha = 1  # parameter for cost_min term
+@@ -81,89 +73,3 @@
+         difference = x_max - x_min
+         x_new = (x-x_min)/difference
+         return x_new
+-
+-    def print_schedules(self):
+-        # print schedules using a readable time format
+-        for schedule in self.schedules.keys():
+-            readable_schedule = {}
+-            for job in self.schedules[schedule]:
+-                time_start = datetime.strftime(datetime.fromtimestamp(self.schedules[schedule][job]['TIME_START']),
+-                                               CONFIG.TIME_KEY_FORMAT)
+-                time_finish = datetime.strftime(datetime.fromtimestamp(self.schedules[schedule][job]['TIME_FINISH']),
+-                                                CONFIG.TIME_KEY_FORMAT)
+-                readable_schedule.update({job: {'TIME_START': time_start, 'TIME_FINISH': time_finish}})
+-            print(f'{schedule}: {readable_schedule}')
+-
+-    def generate_schedules(self):
+-        self.jobs = self.create_dictionary()
+-        self.schedules.update({'FIFO': EmpiricalScheduling.first_in_first_out(self.jobs)})
+-        self.schedules.update({'EDD': EmpiricalScheduling.earliest_due_date_first(self.jobs)})
+-        self.schedules.update({'LIFO': EmpiricalScheduling.last_in_first_out(self.jobs)})
+-        self.schedules.update({'SPT': EmpiricalScheduling.shortest_processing_time(self.jobs)})
+-        self.schedules.update({'Pyomo': PyomoScheduling.opt_schedule(self.jobs, self.schedules['SPT'])})
+-
+-    def create_dictionary(self):
+-        jobs = self.jobs_record.loc[:]['DATA']
+-        prices_list = []
+-        job_dict = {}
+-        for job in jobs:
+-            estimate_dp = self.machine.records_keeper.get_prices(job.my_id)
+-            prices_list.append({job.my_id: estimate_dp.prices})
+-            job_dict.update({job.my_id: {
+-                JobConstraint.TIME_READY: job.constraints[JobConstraint.TIME_READY],
+-                JobConstraint.TIME_DEADLINE: job.constraints[JobConstraint.TIME_DEADLINE],
+-                JobConstraint.TIME_PROCESSING: job.constraints[JobConstraint.TIME_PROCESSING],
+-                JobConstraint.ENERGY_DEMAND: job.constraints[JobConstraint.ENERGY_DEMAND]
+-            }})
+-        return job_dict
+-
+-    # Gantt Chart largely based on code from
+-    # https://jckantor.github.io/ND-Pyomo-Cookbook/notebooks/04.02-Machine-Bottleneck.html#example
+-    def plot_schedules(self):
+-        bw = 0.3
+-        for refschedule in self.schedules.keys():
+-            schedule = self.schedules[refschedule]
+-            JOBS = self.jobs
+-            plt.figure(figsize=(12, 0.7 * (len(schedule.keys()))))
+-            idx = 0
+-            for j in sorted(JOBS.keys()):
+-                x = datetime.fromtimestamp(JOBS[j][JobConstraint.TIME_READY])
+-                y = datetime.fromtimestamp(JOBS[j][JobConstraint.TIME_DEADLINE])
+-                plt.fill_between([x, y], [idx - bw, idx - bw], [idx + bw, idx + bw], color='cyan', alpha=0.6)
+-                if j in schedule.keys():
+-                    x = datetime.fromtimestamp(schedule[j]['TIME_START'])
+-                    y = datetime.fromtimestamp(schedule[j]['TIME_FINISH'])
+-                    plt.fill_between([x, y], [idx - bw, idx - bw], [idx + bw, idx + bw], color='red', alpha=0.5)
+-                    plt.plot([x, y, y, x, x], [idx - bw, idx - bw, idx + bw, idx + bw, idx - bw], color='k')
+-                    plt.text(datetime.fromtimestamp((schedule[j]['TIME_START'] + schedule[j]['TIME_FINISH'])/2), idx,
+-                             'Job ' + j, color='white', weight='bold',
+-                             horizontalalignment='center', verticalalignment='center')
+-                idx += 1
+-
+-            plt.ylim(-0.5, idx - 0.5)
+-            plt.title(refschedule)
+-            plt.xlabel('Time')
+-            plt.ylabel('Jobs')
+-            plt.yticks(range(len(JOBS)), sorted(JOBS.keys()))
+-            plt.grid()
+-        plt.show()
+-
+-    def performance_indicators(self):
+-        KPI = {}
+-        for schedule in self.schedules.keys():
+-            KPI.update({schedule: {}})
+-            makespan = max(self.schedules[schedule][job]['TIME_FINISH'] for job in self.schedules[schedule]) \
+-                       - min(self.schedules[schedule][job]['TIME_START'] for job in self.schedules[schedule])
+-            KPI[schedule].update({'Makespan': makespan/3600})
+-            max_pastdue = max(max(0, self.schedules[schedule][job]['TIME_FINISH'] - self.jobs[job][JobConstraint.TIME_DEADLINE]) for job in self.schedules[schedule])
+-            KPI[schedule].update({'Max Pastdue': max_pastdue/3600})
+-            sum_pastdue = sum(max(0, self.schedules[schedule][job]['TIME_FINISH'] - self.jobs[job][JobConstraint.TIME_DEADLINE]) for job in self.schedules[schedule])
+-            KPI[schedule].update({'Sum of Pastdue': sum_pastdue/3600})
+-            no_pastdue = sum(self.schedules[schedule][job]['TIME_FINISH'] > self.jobs[job][JobConstraint.TIME_DEADLINE] for job in self.schedules[schedule])
+-            KPI[schedule].update({'Number of Pastdue': no_pastdue})
+-            no_on_time = sum(self.schedules[schedule][job]['TIME_FINISH'] <= self.jobs[job][JobConstraint.TIME_DEADLINE] for job in self.schedules[schedule])
+-            KPI[schedule].update({'Number on Time': no_on_time})
+-            fraction_on_time = no_on_time / len(self.schedules[schedule])
+-            KPI[schedule].update({'Fraction on Time': fraction_on_time})
+-        #KPI['Cost'] = sum(prices_dictionary[job][self.schedules[schedule][job]['start']] for job in self.schedules[schedule])
+-        return KPI
+Index: main.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/main.py b/main.py
+--- a/main.py	(revision fbb4a09593098ce0b44030585375f2e5f525c34a)
++++ b/main.py	(revision 3bdb91a3702801913dbedf55eb97a49b5c28ab59)
+@@ -28,20 +28,6 @@
+     for machine, job in machine_jobs:
+         machines[machine].records_keeper.add_job(job)
+ 
+-    # generate schedules for jobs that were added to the machines
+-    for machine in machines:
+-        machine.strategizer.generate_schedules()
+-
+-        # output schedules in console
+-        machine.strategizer.print_schedules()
+-
+-        # calculate performance indicators and print to console
+-        KPI = machine.strategizer.performance_indicators()
+-        for schedule in KPI.keys():
+-            print(f'{schedule}: {KPI[schedule]}')
+-        # get output in form of Gantt chart
+-        # machine.strategizer.plot_schedules()
+-
+     # platform.run()
+ 
+ 
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_3_21_2023_12_50_AM_[Changes]/shelved.patch
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_3_21_2023_12_50_AM_[Changes]/shelved.patch b/.idea/shelf/Uncommitted_changes_before_Update_at_3_21_2023_12_50_AM_[Changes]/shelved.patch
+new file mode 100644
+--- /dev/null	(revision d457811082ee7146eb864bcc4c7fcfa49567db1f)
++++ b/.idea/shelf/Uncommitted_changes_before_Update_at_3_21_2023_12_50_AM_[Changes]/shelved.patch	(revision d457811082ee7146eb864bcc4c7fcfa49567db1f)
+@@ -0,0 +1,460 @@
++Index: main.py
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+>from loguru import logger\r\nimport asyncio\r\n\r\nimport CONFIG\r\nimport DataGenerator\r\nfrom TradingPlatform import Platform\r\nfrom Machine import Machine\r\n\r\n\r\nasync def run():\r\n    # create logger\r\n    logger.add('log/log' + CONFIG.get_time_key())\r\n\r\n    # instantiate platform\r\n    platform = Platform()\r\n\r\n    # generate data\r\n    machine_jobs = DataGenerator.generate_data()\r\n\r\n    # create machines\r\n    machines = []\r\n    for _ in range(CONFIG.N_MACHINES):\r\n        machine = Machine(platform)\r\n        machine.register_in_platform()\r\n        machines.append(machine)\r\n\r\n    # add jobs to the machines\r\n    for machine, job in machine_jobs:\r\n        machines[machine].records_keeper.add_job(job)\r\n\r\n    # generate schedules for jobs that were added to the machines\r\n    for machine in machines:\r\n        machine.strategizer.generate_schedules()\r\n\r\n        # output schedules in console\r\n        machine.strategizer.print_schedules()\r\n\r\n        # calculate performance indicators and print to console\r\n        KPI = machine.strategizer.performance_indicators()\r\n        for schedule in KPI.keys():\r\n            print(f'{schedule}: {KPI[schedule]}')\r\n        # get output in form of Gantt chart\r\n        # machine.strategizer.plot_schedules()\r\n\r\n    # platform.run()\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    asyncio.run(run())\r\n
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/main.py b/main.py
++--- a/main.py	(revision f344f9074cd8072b931ef7d8fb9c6a73e3f31a77)
+++++ b/main.py	(date 1678715847868)
++@@ -28,20 +28,6 @@
++     for machine, job in machine_jobs:
++         machines[machine].records_keeper.add_job(job)
++ 
++-    # generate schedules for jobs that were added to the machines
++-    for machine in machines:
++-        machine.strategizer.generate_schedules()
++-
++-        # output schedules in console
++-        machine.strategizer.print_schedules()
++-
++-        # calculate performance indicators and print to console
++-        KPI = machine.strategizer.performance_indicators()
++-        for schedule in KPI.keys():
++-            print(f'{schedule}: {KPI[schedule]}')
++-        # get output in form of Gantt chart
++-        # machine.strategizer.plot_schedules()
++-
++     # platform.run()
++ 
++ 
++Index: CONFIG.py
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+># Configuration file\r\n\r\n# imports\r\nfrom enum import Enum, auto\r\nfrom datetime import timedelta, datetime\r\nimport numpy as np\r\n\r\n# Simulation Parameters\r\nN_MACHINES = 100\r\nN_JOBS = 10000\r\nREF_DATETIME = '20230109100000000000'\r\nTIME_RELEASE_MAX = 50  # in units of TIME_INT_INTERVAL\r\nTIME_DEADLINE_MAX = 100  # in units of TIME_INT_INTERVAL\r\nJOB_ENERGY_MIN = 50  # in kWh\r\nJOB_ENERGY_MAX = 200  # in kWh\r\nMARGIN_PRICE_TIME = 24  # in units of TIME_INT_INTERVAL used for extra price info after job due-time\r\nPRIORITY_LEVELS = 3  # number of priority levels including zero. The lower priority value, the higher the priority.\r\n\r\n# constants\r\n# PlatformEntity IDs\r\nID_ECE = \"ECE\"\r\nID_FCC = \"FCC\"\r\n\r\n# Naming conventions\r\nNAME_REQUEST_ESTIMATION = \"ReqEst\"\r\nNAME_MACHINE = \"M\"\r\nNAME_AGENT = \"A\"\r\nNAME_PLATFORM_ENTITY = \"PE\"\r\nNAME_ZERO_FILL = int(np.log10(N_JOBS)) + 1 if N_JOBS >= N_MACHINES else int(np.log10(N_MACHINES)) + 1\r\n\r\n# Default priority level\r\nPRIORITY_DEFAULT = PRIORITY_LEVELS - 1\r\n\r\n# Formatting datetime instances\r\nTIME_KEY_FORMAT = \"%Y%m%d%H%M%S%f\"\r\nTIME_INTERVAL = 60  # time slot size in minutes\r\nTIME_INT_INTERVAL = 60  # in minutes\r\n\r\n# Initial number of buckets in all the Hash Tables used\r\nN_INITIAL_CAPACITY = 50\r\n\r\n# value of transaction_id to be interpreted as refused agent request\r\nREFUSED_REQUEST = \"0000\"\r\n\r\n# Return codes used by methods as a result status\r\nMETHOD_SUCCESS = 0\r\nMETHOD_FAILURE = 1\r\n\r\n# Maximum number of agents created per Platform\r\nN_AGENTS = 20\r\n\r\n# Constant to control logging to the console\r\nLOGGING_CONSOLE_ALLOWED = False\r\n\r\n\r\n# Job Datapoint fields\r\n# ENERGY_DEMAND, TIME_READY, TIME_DEADLINE, TIME_PROCESSING, PRIORITY\r\nclass JobRecField(Enum):\r\n    JOB_ID = auto\r\n    PRIORITY = auto\r\n    STATUS = auto\r\n    DATA = auto\r\n\r\n\r\nLIST_JOB_RECORD_FIELDS = list(JobRecField._member_map_.keys())\r\n\r\n\r\n# Job constraints\r\nclass JobConstraint(Enum):\r\n    TIME_READY = 'TIME_READY'\r\n    TIME_DEADLINE = 'TIME_DEADLINE'\r\n    TIME_PROCESSING = 'TIME_PROCESSING'\r\n    ENERGY_DEMAND = 'ENERGY_DEMAND'\r\n\r\n\r\nENUM_JOB_CONSTRAINTS = list(JobConstraint._member_map_.keys())\r\n\r\n\r\n# job status enumeration\r\nclass JobStatus(Enum):\r\n    ENERGY_NEEDED = auto\r\n    ENERGY_RESERVED = auto\r\n\r\n\r\n# ENUM_JOB_CONSTRAINTS = Enum('Job_Status', ['ENERGY_NEEDED', 'ENERGY_RESERVED'])\r\nENUM_JOB_STATUS = list(JobStatus._member_map_.keys())\r\n\r\n# Job Price estimation fields\r\nLIST_PRICE_ESTIMATION = ['PERIOD_START', 'TIMESTAMP/PRICE']\r\n\r\n\r\n# Useful Methods\r\n\r\n# Function to return current time for key generation\r\ndef get_time_key():\r\n    now = datetime.now()\r\n    return now.strftime(TIME_KEY_FORMAT)\r\n\r\n\r\n# Function to convert time integer from time string\r\ndef time_str_to_int(time_string: str):\r\n    # convert relevant times to datetime instances\r\n    ref_time = datetime.strptime(REF_DATETIME, TIME_KEY_FORMAT)\r\n    time = datetime.strptime(time_string, TIME_KEY_FORMAT)\r\n\r\n    # calculate time difference and get timedelta instance\r\n    time_delta = time - ref_time\r\n\r\n    # convert timedelta instance to integer value\r\n    time_int = int((time_delta.total_seconds() / 60) / TIME_INT_INTERVAL)\r\n\r\n    return time_int\r\n\r\n\r\n# Function to create list of times between start and end time using TIME_INTERVAL\r\n# reference: https://stackoverflow.com/questions/40815648/get-all-the-times-in-between-two-datetime-in-list\r\ndef create_time_list(time_start, time_end):\r\n    # generator for use in time_list generation loop\r\n    # def per_delta(start, end, delta):\r\n    #     curr = start\r\n    #     while curr <= end:\r\n    #         yield curr\r\n    #         curr += delta\r\n    #\r\n    # # convert times from string to datetime instances\r\n    # start_time = datetime.strptime(time_start, TIME_KEY_FORMAT)\r\n    # end_time = datetime.strptime(time_end, TIME_KEY_FORMAT) + timedelta(minutes=MARGIN_PRICE_TIME * TIME_INT_INTERVAL)\r\n\r\n    # loop to generate time_list\r\n    # time should be constrained to HH:00 time using REF_DATETIME\r\n    time_list = []\r\n    # for time in per_delta(start_time, end_time, timedelta(minutes=TIME_INTERVAL)):\r\n    #     time_list.append(time.strftime(TIME_KEY_FORMAT))\r\n\r\n    delta_intervals = int((time_end - time_start) / 3600)\r\n    for i in range(delta_intervals):\r\n        time_list.append(time_start + (i * 3600))\r\n    return time_list\r\n\r\n\r\nprint('CONFIG imported')\r\n
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/CONFIG.py b/CONFIG.py
++--- a/CONFIG.py	(revision f344f9074cd8072b931ef7d8fb9c6a73e3f31a77)
+++++ b/CONFIG.py	(date 1679316536653)
++@@ -2,19 +2,32 @@
++ 
++ # imports
++ from enum import Enum, auto
++-from datetime import timedelta, datetime
+++from datetime import datetime
+++from configparser import ConfigParser
++ import numpy as np
++ 
+++import CONFIG_PROFILES
+++
+++# Read simulation parameters from a config.ini
+++config_sim = ConfigParser()
+++config_sim.read('CONFIG_PROFILES.ini')
+++test_profile = input('TEST PROFILE: ')
+++if test_profile is  'TEST_LONG':
+++    pass
+++# try:
+++#     sim_profile = config[]
+++
++ # Simulation Parameters
++ N_MACHINES = 100
++ N_JOBS = 10000
++ REF_DATETIME = '20230109100000000000'
++-TIME_RELEASE_MAX = 50  # in units of TIME_INT_INTERVAL
++-TIME_DEADLINE_MAX = 100  # in units of TIME_INT_INTERVAL
++-JOB_ENERGY_MIN = 50  # in kWh
++-JOB_ENERGY_MAX = 200  # in kWh
++-MARGIN_PRICE_TIME = 24  # in units of TIME_INT_INTERVAL used for extra price info after job due-time
++-PRIORITY_LEVELS = 3  # number of priority levels including zero. The lower priority value, the higher the priority.
+++N_AGENTS = 20  # Maximum number of agents created per Platform
+++
+++# Priority
+++# number of priority levels including zero. The lower priority value, the higher the priority.
+++PRIORITY_LEVELS = 3
+++# Default priority level
+++PRIORITY_DEFAULT = PRIORITY_LEVELS - 1
++ 
++ # constants
++ # PlatformEntity IDs
++@@ -28,13 +41,15 @@
++ NAME_PLATFORM_ENTITY = "PE"
++ NAME_ZERO_FILL = int(np.log10(N_JOBS)) + 1 if N_JOBS >= N_MACHINES else int(np.log10(N_MACHINES)) + 1
++ 
++-# Default priority level
++-PRIORITY_DEFAULT = PRIORITY_LEVELS - 1
++-
++-# Formatting datetime instances
++-TIME_KEY_FORMAT = "%Y%m%d%H%M%S%f"
+++# Time Parameters
+++TIME_KEY_FORMAT = "%Y%m%d%H%M%S%f"  # Formatting datetime instances
++ TIME_INTERVAL = 60  # time slot size in minutes
++ TIME_INT_INTERVAL = 60  # in minutes
+++TIME_RELEASE_MAX = 50  # in units of TIME_INT_INTERVAL
+++TIME_DEADLINE_MAX = 100  # in units of TIME_INT_INTERVAL
+++JOB_ENERGY_MIN = 50  # in kWh
+++JOB_ENERGY_MAX = 200  # in kWh
+++MARGIN_PRICE_TIME = 24  # in units of TIME_INT_INTERVAL used for extra price info after job due-time
++ 
++ # Initial number of buckets in all the Hash Tables used
++ N_INITIAL_CAPACITY = 50
++@@ -46,9 +61,6 @@
++ METHOD_SUCCESS = 0
++ METHOD_FAILURE = 1
++ 
++-# Maximum number of agents created per Platform
++-N_AGENTS = 20
++-
++ # Constant to control logging to the console
++ LOGGING_CONSOLE_ALLOWED = False
++ 
++@@ -113,24 +125,8 @@
++ 
++ 
++ # Function to create list of times between start and end time using TIME_INTERVAL
++-# reference: https://stackoverflow.com/questions/40815648/get-all-the-times-in-between-two-datetime-in-list
++ def create_time_list(time_start, time_end):
++-    # generator for use in time_list generation loop
++-    # def per_delta(start, end, delta):
++-    #     curr = start
++-    #     while curr <= end:
++-    #         yield curr
++-    #         curr += delta
++-    #
++-    # # convert times from string to datetime instances
++-    # start_time = datetime.strptime(time_start, TIME_KEY_FORMAT)
++-    # end_time = datetime.strptime(time_end, TIME_KEY_FORMAT) + timedelta(minutes=MARGIN_PRICE_TIME * TIME_INT_INTERVAL)
++-
++-    # loop to generate time_list
++-    # time should be constrained to HH:00 time using REF_DATETIME
++     time_list = []
++-    # for time in per_delta(start_time, end_time, timedelta(minutes=TIME_INTERVAL)):
++-    #     time_list.append(time.strftime(TIME_KEY_FORMAT))
++ 
++     delta_intervals = int((time_end - time_start) / 3600)
++     for i in range(delta_intervals):
++Index: SchedulingStrategies/EmpiricalScheduling.py
++===================================================================
++diff --git a/SchedulingStrategies/EmpiricalScheduling.py b/SchedulingStrategies/EmpiricalScheduling.py
++deleted file mode 100644
++--- a/SchedulingStrategies/EmpiricalScheduling.py	(revision f344f9074cd8072b931ef7d8fb9c6a73e3f31a77)
+++++ /dev/null	(revision f344f9074cd8072b931ef7d8fb9c6a73e3f31a77)
++@@ -1,69 +0,0 @@
++-# Empirical scheduling based on examples found at
++-# https://jckantor.github.io/ND-Pyomo-Cookbook/notebooks/04.02-Machine-Bottleneck.html#empirical-scheduling
++-
++-from CONFIG import JobConstraint
++-
++-
++-def ordered(jobs, order):
++-    """Schedule a dictionary of jobs on a single machine in a specified order."""
++-    start = 0
++-    finish = 0
++-    schedule = {}
++-    for job in order:
++-        start = max(jobs[job][JobConstraint.TIME_READY], finish)
++-        finish = start + jobs[job][JobConstraint.TIME_PROCESSING]
++-        schedule[job] = {'TIME_START': start, 'TIME_FINISH': finish}
++-    return schedule
++-
++-
++-def first_in_first_out(jobs):
++-    order_by_release = sorted(jobs, key=lambda job: jobs[job][JobConstraint.TIME_READY])
++-    return ordered(jobs, order_by_release)
++-
++-
++-def earliest_due_date_first(jobs):
++-    schedule = {}
++-    unfinished_jobs = set(jobs.keys())
++-    start = 0
++-    while len(unfinished_jobs) > 0:
++-        start = max(start, min(jobs[job][JobConstraint.TIME_READY] for job in unfinished_jobs))
++-        edd = {job: jobs[job][JobConstraint.TIME_DEADLINE] for job in unfinished_jobs if
++-               jobs[job][JobConstraint.TIME_READY] <= start}
++-        job = min(edd, key=edd.get)
++-        finish = start + jobs[job][JobConstraint.TIME_PROCESSING]
++-        unfinished_jobs.remove(job)
++-        schedule[job] = {'TIME_START': start, 'TIME_FINISH': finish}
++-        start = finish
++-    return schedule
++-
++-
++-def last_in_first_out(jobs):
++-    schedule = {}
++-    unfinished_jobs = set(jobs.keys())
++-    start = 0
++-    while len(unfinished_jobs) > 0:
++-        start = max(start, min(jobs[job][JobConstraint.TIME_READY] for job in unfinished_jobs))
++-        lifo = {job: jobs[job][JobConstraint.TIME_READY] for job in unfinished_jobs if
++-                jobs[job][JobConstraint.TIME_READY] <= start}
++-        job = max(lifo, key=lifo.get)
++-        finish = start + jobs[job][JobConstraint.TIME_PROCESSING]
++-        unfinished_jobs.remove(job)
++-        schedule[job] = {'TIME_START': start, 'TIME_FINISH': finish}
++-        start = finish
++-    return schedule
++-
++-
++-def shortest_processing_time(jobs):
++-    schedule = {}
++-    unfinished_jobs = set(jobs.keys())
++-    start = 0
++-    while len(unfinished_jobs) > 0:
++-        start = max(start, min(jobs[job][JobConstraint.TIME_READY] for job in unfinished_jobs))
++-        spt = {job: jobs[job][JobConstraint.TIME_PROCESSING] for job in unfinished_jobs if
++-               jobs[job][JobConstraint.TIME_READY] <= start}
++-        job = min(spt, key=spt.get)
++-        finish = start + jobs[job][JobConstraint.TIME_PROCESSING]
++-        unfinished_jobs.remove(job)
++-        schedule[job] = {'TIME_START': start, 'TIME_FINISH': finish}
++-        start = finish
++-    return schedule
++Index: SchedulingStrategies/PyomoScheduling.py
++===================================================================
++diff --git a/SchedulingStrategies/PyomoScheduling.py b/SchedulingStrategies/PyomoScheduling.py
++deleted file mode 100644
++--- a/SchedulingStrategies/PyomoScheduling.py	(revision f344f9074cd8072b931ef7d8fb9c6a73e3f31a77)
+++++ /dev/null	(revision f344f9074cd8072b931ef7d8fb9c6a73e3f31a77)
++@@ -1,64 +0,0 @@
++-# Solver based scheduling based on examples found at
++-# https://jckantor.github.io/ND-Pyomo-Cookbook/notebooks/04.02-Machine-Bottleneck.html#pyomo-model
++-import CONFIG
++-from CONFIG import JobConstraint
++-from pyomo.environ import *
++-from pyomo.gdp import *
++-
++-
++-def opt_schedule(JOBS, order_start):
++-    # create model
++-    m = ConcreteModel()
++-
++-    # NOTE: The introduction of resolution is necessary to limit the decision space of the solver to a reasonable range.
++-    # factor to get hourly resolution
++-    resolution = CONFIG.TIME_INT_INTERVAL * CONFIG.TIME_INTERVAL
++-
++-    # index set to simplify notation
++-    m.J = Set(initialize=JOBS.keys())
++-    m.PAIRS = Set(initialize=m.J * m.J, dimen=2, filter=lambda m, j, k: j < k)
++-
++-    # upper bounds on how long it would take to process all jobs
++-    tmax = (max([JOBS[j][JobConstraint.TIME_READY] for j in m.J]) +
++-            sum([JOBS[j][JobConstraint.TIME_PROCESSING] for j in m.J])) / resolution
++-    tmin = min([JOBS[j][JobConstraint.TIME_READY] for j in m.J]) / resolution
++-
++-    # initialize the m.start variable with a 'best guess'
++-    def initialize_m_start(m, j):
++-        return order_start[j]['TIME_START']/resolution
++-
++-    # decision variables
++-    m.start = Var(m.J, domain=PositiveIntegers, bounds=(tmin, tmax), initialize=initialize_m_start)
++-    m.pastdue = Var(m.J, domain=PositiveIntegers, bounds=(tmin, tmax))
++-    m.early = Var(m.J, domain=PositiveIntegers, bounds=(tmin, tmax))
++-
++-    # additional decision variables for use in the objecive
++-    m.makespan = Var(domain=PositiveIntegers, bounds=(tmin, tmax))
++-    m.maxpastdue = Var(domain=PositiveIntegers, bounds=(tmin, tmax))
++-    m.ispastdue = Var(m.J, domain=Binary)
++-
++-    # objective function
++-    m.OBJ = Objective(expr=sum([m.pastdue[j] for j in m.J]), sense=minimize)
++-
++-    # constraints
++-    m.c1 = Constraint(m.J, rule=lambda m, j: m.start[j] >= JOBS[j][JobConstraint.TIME_READY] / resolution)
++-    m.c2 = Constraint(m.J, rule=lambda m, j: m.start[j] + JOBS[j][JobConstraint.TIME_PROCESSING] / resolution +
++-                      m.early[j] == JOBS[j][JobConstraint.TIME_DEADLINE] / resolution + m.pastdue[j])
++-    m.c3 = Disjunction(m.PAIRS, rule=lambda m, j, k:
++-                       [m.start[j] + JOBS[j][JobConstraint.TIME_PROCESSING] / resolution <= m.start[k],
++-                        m.start[k] + JOBS[k][JobConstraint.TIME_PROCESSING] / resolution <= m.start[j]])
++-
++-    m.c4 = Constraint(m.J, rule=lambda m, j: m.pastdue[j] <= m.maxpastdue)
++-    m.c5 = Constraint(m.J, rule=lambda m, j: m.start[j] + JOBS[j][JobConstraint.TIME_PROCESSING] / resolution
++-                      <= m.makespan * resolution)
++-    m.c6 = Constraint(m.J, rule=lambda m, j: m.pastdue[j] <= tmax * m.ispastdue[j])
++-
++-    TransformationFactory('gdp.hull').apply_to(m)
++-    SolverFactory('glpk').solve(m).write()
++-
++-    schedule = {}
++-    for j in m.J:
++-        schedule[j] = {'TIME_START': m.start[j]() * resolution,
++-                       'TIME_FINISH': m.start[j]() * resolution + JOBS[j][JobConstraint.TIME_PROCESSING]}
++-
++-    return schedule
++Index: MachineScheduleGenerator.py
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+>from datetime import datetime, timedelta\r\n\r\nimport CONFIG\r\nfrom CONFIG import JobConstraint\r\nfrom DataPoint import JobDataPoint, EstimationDataPoint\r\n\r\nimport matplotlib.pyplot as plt\r\nfrom SchedulingStrategies import EmpiricalScheduling, PyomoScheduling\r\n\r\n\r\nclass MachineScheduleGenerator:\r\n    def __init__(self, machine):\r\n        self.machine = machine\r\n        self.jobs_record = machine.records_keeper.jobs_record\r\n        self.jobs = {}\r\n        self.schedules = {}\r\n        # self.job = job\r\n        # self.estimates_dp = estimates_dp\r\n        #\r\n        # self.times = self.estimates_dp.periods_start\r\n        # self.prices = self.estimates_dp.prices\r\n        # self.prices_dict = {self.times[i]: self.prices[i] for i in range(len(self.times))}\r\n        #\r\n        # self.time_ready = datetime.strptime(self.job.constraints[JobConstraint.TIME_READY], CONFIG.TIME_KEY_FORMAT)\r\n        # self.time_deadline = datetime.strptime(self.job.constraints[JobConstraint.TIME_DEADLINE], CONFIG.TIME_KEY_FORMAT)\r\n        # self.time_processing = datetime.timedelta(minutes=self.job.constraints['TIME_PROCESSING'])\r\n\r\n        # TODO: initialize with function\r\n        self.alpha = 1  # parameter for cost_min term\r\n        self.beta = 1  # parameter for earliness term\r\n        self.gamma = 1  # parameter for tardiness term\r\n\r\n    def energy_price_cost(self, ti):\r\n        duration_k = self.time_processing / 60\r\n\r\n        cost = 0\r\n        for i in range(len(self.estimates_dp.prices)):\r\n            for k in range(duration_k):\r\n                cost += self.estimates_dp.prices[k]\r\n\r\n    def earliness_cost(self, ti):\r\n        earliness = max(self.time_deadline - ti - self.time_processing, 0)\r\n        # for simplicity, linear penalty for earliness, could also be a reward, depending on the job\r\n        return earliness\r\n\r\n    def tardiness_cost(self, ti):\r\n        tardiness = max(ti + self.time_processing - self.time_deadline, 0)\r\n        # for simplicity, linear penalty for tardiness\r\n        return tardiness\r\n\r\n    def compute_costs(self):\r\n        # have a list for every objective\r\n        costs_list_currency = []\r\n        costs_list_earliness = []\r\n        costs_list_tardiness = []\r\n        normcosts_list_currency = []\r\n        normcosts_list_earliness = []\r\n        normcosts_list_tardiness = []\r\n\r\n        for ti in self.times:\r\n            costs_list_currency.append(self.energy_price_cost(ti))\r\n            costs_list_earliness.append(self.earliness_cost(ti))\r\n            costs_list_tardiness.append(self.tardiness_cost(ti))\r\n        # retrieve minimum and maximum for each list\r\n        currency_max = max (costs_list_currency)\r\n        currency_min = min (costs_list_currency)\r\n        earliness_max = max (costs_list_earliness)\r\n        earliness_min = min (costs_list_earliness) # should be 0, but could be larger if all solutions have earliness\r\n        tardiness_max = max (costs_list_tardiness)\r\n        tardiness_min = min (costs_list_tardiness) # should be 0, but could be larger if all solutions have tardiness\r\n\r\n        # normalize costs and save to norm_list\r\n        for ti in costs_list_currency:\r\n            normcosts_list_currency.append(self.normalize_costs(costs_list_currency[ti], currency_min, currency_max))\r\n            normcosts_list_earliness.append(self.normalize_costs(costs_list_earliness[ti], earliness_min, earliness_max))\r\n            normcosts_list_tardiness.append(self.normalize_costs(costs_list_tardiness[ti], tardiness_min, tardiness_max))\r\n\r\n    @staticmethod\r\n    def normalize_costs(self, x, x_min, x_max):\r\n        # min-max feature scaling\r\n        difference = x_max - x_min\r\n        x_new = (x-x_min)/difference\r\n        return x_new\r\n\r\n    def print_schedules(self):\r\n        # print schedules using a readable time format\r\n        for schedule in self.schedules.keys():\r\n            readable_schedule = {}\r\n            for job in self.schedules[schedule]:\r\n                time_start = datetime.strftime(datetime.fromtimestamp(self.schedules[schedule][job]['TIME_START']),\r\n                                               CONFIG.TIME_KEY_FORMAT)\r\n                time_finish = datetime.strftime(datetime.fromtimestamp(self.schedules[schedule][job]['TIME_FINISH']),\r\n                                                CONFIG.TIME_KEY_FORMAT)\r\n                readable_schedule.update({job: {'TIME_START': time_start, 'TIME_FINISH': time_finish}})\r\n            print(f'{schedule}: {readable_schedule}')\r\n\r\n    def generate_schedules(self):\r\n        self.jobs = self.create_dictionary()\r\n        self.schedules.update({'FIFO': EmpiricalScheduling.first_in_first_out(self.jobs)})\r\n        self.schedules.update({'EDD': EmpiricalScheduling.earliest_due_date_first(self.jobs)})\r\n        self.schedules.update({'LIFO': EmpiricalScheduling.last_in_first_out(self.jobs)})\r\n        self.schedules.update({'SPT': EmpiricalScheduling.shortest_processing_time(self.jobs)})\r\n        self.schedules.update({'Pyomo': PyomoScheduling.opt_schedule(self.jobs, self.schedules['SPT'])})\r\n\r\n    def create_dictionary(self):\r\n        jobs = self.jobs_record.loc[:]['DATA']\r\n        prices_list = []\r\n        job_dict = {}\r\n        for job in jobs:\r\n            estimate_dp = self.machine.records_keeper.get_prices(job.my_id)\r\n            prices_list.append({job.my_id: estimate_dp.prices})\r\n            job_dict.update({job.my_id: {\r\n                JobConstraint.TIME_READY: job.constraints[JobConstraint.TIME_READY],\r\n                JobConstraint.TIME_DEADLINE: job.constraints[JobConstraint.TIME_DEADLINE],\r\n                JobConstraint.TIME_PROCESSING: job.constraints[JobConstraint.TIME_PROCESSING],\r\n                JobConstraint.ENERGY_DEMAND: job.constraints[JobConstraint.ENERGY_DEMAND]\r\n            }})\r\n        return job_dict\r\n\r\n    # Gantt Chart largely based on code from\r\n    # https://jckantor.github.io/ND-Pyomo-Cookbook/notebooks/04.02-Machine-Bottleneck.html#example\r\n    def plot_schedules(self):\r\n        bw = 0.3\r\n        for refschedule in self.schedules.keys():\r\n            schedule = self.schedules[refschedule]\r\n            JOBS = self.jobs\r\n            plt.figure(figsize=(12, 0.7 * (len(schedule.keys()))))\r\n            idx = 0\r\n            for j in sorted(JOBS.keys()):\r\n                x = datetime.fromtimestamp(JOBS[j][JobConstraint.TIME_READY])\r\n                y = datetime.fromtimestamp(JOBS[j][JobConstraint.TIME_DEADLINE])\r\n                plt.fill_between([x, y], [idx - bw, idx - bw], [idx + bw, idx + bw], color='cyan', alpha=0.6)\r\n                if j in schedule.keys():\r\n                    x = datetime.fromtimestamp(schedule[j]['TIME_START'])\r\n                    y = datetime.fromtimestamp(schedule[j]['TIME_FINISH'])\r\n                    plt.fill_between([x, y], [idx - bw, idx - bw], [idx + bw, idx + bw], color='red', alpha=0.5)\r\n                    plt.plot([x, y, y, x, x], [idx - bw, idx - bw, idx + bw, idx + bw, idx - bw], color='k')\r\n                    plt.text(datetime.fromtimestamp((schedule[j]['TIME_START'] + schedule[j]['TIME_FINISH'])/2), idx,\r\n                             'Job ' + j, color='white', weight='bold',\r\n                             horizontalalignment='center', verticalalignment='center')\r\n                idx += 1\r\n\r\n            plt.ylim(-0.5, idx - 0.5)\r\n            plt.title(refschedule)\r\n            plt.xlabel('Time')\r\n            plt.ylabel('Jobs')\r\n            plt.yticks(range(len(JOBS)), sorted(JOBS.keys()))\r\n            plt.grid()\r\n        plt.show()\r\n\r\n    def performance_indicators(self):\r\n        KPI = {}\r\n        for schedule in self.schedules.keys():\r\n            KPI.update({schedule: {}})\r\n            makespan = max(self.schedules[schedule][job]['TIME_FINISH'] for job in self.schedules[schedule]) \\\r\n                       - min(self.schedules[schedule][job]['TIME_START'] for job in self.schedules[schedule])\r\n            KPI[schedule].update({'Makespan': makespan/3600})\r\n            max_pastdue = max(max(0, self.schedules[schedule][job]['TIME_FINISH'] - self.jobs[job][JobConstraint.TIME_DEADLINE]) for job in self.schedules[schedule])\r\n            KPI[schedule].update({'Max Pastdue': max_pastdue/3600})\r\n            sum_pastdue = sum(max(0, self.schedules[schedule][job]['TIME_FINISH'] - self.jobs[job][JobConstraint.TIME_DEADLINE]) for job in self.schedules[schedule])\r\n            KPI[schedule].update({'Sum of Pastdue': sum_pastdue/3600})\r\n            no_pastdue = sum(self.schedules[schedule][job]['TIME_FINISH'] > self.jobs[job][JobConstraint.TIME_DEADLINE] for job in self.schedules[schedule])\r\n            KPI[schedule].update({'Number of Pastdue': no_pastdue})\r\n            no_on_time = sum(self.schedules[schedule][job]['TIME_FINISH'] <= self.jobs[job][JobConstraint.TIME_DEADLINE] for job in self.schedules[schedule])\r\n            KPI[schedule].update({'Number on Time': no_on_time})\r\n            fraction_on_time = no_on_time / len(self.schedules[schedule])\r\n            KPI[schedule].update({'Fraction on Time': fraction_on_time})\r\n        #KPI['Cost'] = sum(prices_dictionary[job][self.schedules[schedule][job]['start']] for job in self.schedules[schedule])\r\n        return KPI\r\n
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/MachineScheduleGenerator.py b/MachineScheduleGenerator.py
++--- a/MachineScheduleGenerator.py	(revision f344f9074cd8072b931ef7d8fb9c6a73e3f31a77)
+++++ b/MachineScheduleGenerator.py	(date 1678728819362)
++@@ -1,29 +1,21 @@
++-from datetime import datetime, timedelta
+++from datetime import datetime
++ 
++ import CONFIG
++-from CONFIG import JobConstraint
++ from DataPoint import JobDataPoint, EstimationDataPoint
++ 
++-import matplotlib.pyplot as plt
++-from SchedulingStrategies import EmpiricalScheduling, PyomoScheduling
++ 
+++class MachineScheduleGenerator():
+++    def __init__(self, job: JobDataPoint, estimates_dp: EstimationDataPoint):
+++        self.job = job
+++        self.estimates_dp = estimates_dp
++ 
++-class MachineScheduleGenerator:
++-    def __init__(self, machine):
++-        self.machine = machine
++-        self.jobs_record = machine.records_keeper.jobs_record
++-        self.jobs = {}
++-        self.schedules = {}
++-        # self.job = job
++-        # self.estimates_dp = estimates_dp
++-        #
++-        # self.times = self.estimates_dp.periods_start
++-        # self.prices = self.estimates_dp.prices
++-        # self.prices_dict = {self.times[i]: self.prices[i] for i in range(len(self.times))}
++-        #
++-        # self.time_ready = datetime.strptime(self.job.constraints[JobConstraint.TIME_READY], CONFIG.TIME_KEY_FORMAT)
++-        # self.time_deadline = datetime.strptime(self.job.constraints[JobConstraint.TIME_DEADLINE], CONFIG.TIME_KEY_FORMAT)
++-        # self.time_processing = datetime.timedelta(minutes=self.job.constraints['TIME_PROCESSING'])
+++        self.times = self.estimates_dp.periods_start
+++        self.prices = self.estimates_dp.prices
+++        self.prices_dict = {self.times[i]: self.prices[i] for i in range(len(self.times))}
+++
+++        self.time_ready = datetime.strptime(self.job.constraints[JobConstraint.TIME_READY], CONFIG.TIME_KEY_FORMAT)
+++        self.time_deadline = datetime.strptime(self.job.constraints[JobConstraint.TIME_DEADLINE], CONFIG.TIME_KEY_FORMAT)
+++        self.time_processing = datetime.timedelta(minutes=self.job.constraints['TIME_PROCESSING'])
++ 
++         # TODO: initialize with function
++         self.alpha = 1  # parameter for cost_min term
++@@ -81,89 +73,3 @@
++         difference = x_max - x_min
++         x_new = (x-x_min)/difference
++         return x_new
++-
++-    def print_schedules(self):
++-        # print schedules using a readable time format
++-        for schedule in self.schedules.keys():
++-            readable_schedule = {}
++-            for job in self.schedules[schedule]:
++-                time_start = datetime.strftime(datetime.fromtimestamp(self.schedules[schedule][job]['TIME_START']),
++-                                               CONFIG.TIME_KEY_FORMAT)
++-                time_finish = datetime.strftime(datetime.fromtimestamp(self.schedules[schedule][job]['TIME_FINISH']),
++-                                                CONFIG.TIME_KEY_FORMAT)
++-                readable_schedule.update({job: {'TIME_START': time_start, 'TIME_FINISH': time_finish}})
++-            print(f'{schedule}: {readable_schedule}')
++-
++-    def generate_schedules(self):
++-        self.jobs = self.create_dictionary()
++-        self.schedules.update({'FIFO': EmpiricalScheduling.first_in_first_out(self.jobs)})
++-        self.schedules.update({'EDD': EmpiricalScheduling.earliest_due_date_first(self.jobs)})
++-        self.schedules.update({'LIFO': EmpiricalScheduling.last_in_first_out(self.jobs)})
++-        self.schedules.update({'SPT': EmpiricalScheduling.shortest_processing_time(self.jobs)})
++-        self.schedules.update({'Pyomo': PyomoScheduling.opt_schedule(self.jobs, self.schedules['SPT'])})
++-
++-    def create_dictionary(self):
++-        jobs = self.jobs_record.loc[:]['DATA']
++-        prices_list = []
++-        job_dict = {}
++-        for job in jobs:
++-            estimate_dp = self.machine.records_keeper.get_prices(job.my_id)
++-            prices_list.append({job.my_id: estimate_dp.prices})
++-            job_dict.update({job.my_id: {
++-                JobConstraint.TIME_READY: job.constraints[JobConstraint.TIME_READY],
++-                JobConstraint.TIME_DEADLINE: job.constraints[JobConstraint.TIME_DEADLINE],
++-                JobConstraint.TIME_PROCESSING: job.constraints[JobConstraint.TIME_PROCESSING],
++-                JobConstraint.ENERGY_DEMAND: job.constraints[JobConstraint.ENERGY_DEMAND]
++-            }})
++-        return job_dict
++-
++-    # Gantt Chart largely based on code from
++-    # https://jckantor.github.io/ND-Pyomo-Cookbook/notebooks/04.02-Machine-Bottleneck.html#example
++-    def plot_schedules(self):
++-        bw = 0.3
++-        for refschedule in self.schedules.keys():
++-            schedule = self.schedules[refschedule]
++-            JOBS = self.jobs
++-            plt.figure(figsize=(12, 0.7 * (len(schedule.keys()))))
++-            idx = 0
++-            for j in sorted(JOBS.keys()):
++-                x = datetime.fromtimestamp(JOBS[j][JobConstraint.TIME_READY])
++-                y = datetime.fromtimestamp(JOBS[j][JobConstraint.TIME_DEADLINE])
++-                plt.fill_between([x, y], [idx - bw, idx - bw], [idx + bw, idx + bw], color='cyan', alpha=0.6)
++-                if j in schedule.keys():
++-                    x = datetime.fromtimestamp(schedule[j]['TIME_START'])
++-                    y = datetime.fromtimestamp(schedule[j]['TIME_FINISH'])
++-                    plt.fill_between([x, y], [idx - bw, idx - bw], [idx + bw, idx + bw], color='red', alpha=0.5)
++-                    plt.plot([x, y, y, x, x], [idx - bw, idx - bw, idx + bw, idx + bw, idx - bw], color='k')
++-                    plt.text(datetime.fromtimestamp((schedule[j]['TIME_START'] + schedule[j]['TIME_FINISH'])/2), idx,
++-                             'Job ' + j, color='white', weight='bold',
++-                             horizontalalignment='center', verticalalignment='center')
++-                idx += 1
++-
++-            plt.ylim(-0.5, idx - 0.5)
++-            plt.title(refschedule)
++-            plt.xlabel('Time')
++-            plt.ylabel('Jobs')
++-            plt.yticks(range(len(JOBS)), sorted(JOBS.keys()))
++-            plt.grid()
++-        plt.show()
++-
++-    def performance_indicators(self):
++-        KPI = {}
++-        for schedule in self.schedules.keys():
++-            KPI.update({schedule: {}})
++-            makespan = max(self.schedules[schedule][job]['TIME_FINISH'] for job in self.schedules[schedule]) \
++-                       - min(self.schedules[schedule][job]['TIME_START'] for job in self.schedules[schedule])
++-            KPI[schedule].update({'Makespan': makespan/3600})
++-            max_pastdue = max(max(0, self.schedules[schedule][job]['TIME_FINISH'] - self.jobs[job][JobConstraint.TIME_DEADLINE]) for job in self.schedules[schedule])
++-            KPI[schedule].update({'Max Pastdue': max_pastdue/3600})
++-            sum_pastdue = sum(max(0, self.schedules[schedule][job]['TIME_FINISH'] - self.jobs[job][JobConstraint.TIME_DEADLINE]) for job in self.schedules[schedule])
++-            KPI[schedule].update({'Sum of Pastdue': sum_pastdue/3600})
++-            no_pastdue = sum(self.schedules[schedule][job]['TIME_FINISH'] > self.jobs[job][JobConstraint.TIME_DEADLINE] for job in self.schedules[schedule])
++-            KPI[schedule].update({'Number of Pastdue': no_pastdue})
++-            no_on_time = sum(self.schedules[schedule][job]['TIME_FINISH'] <= self.jobs[job][JobConstraint.TIME_DEADLINE] for job in self.schedules[schedule])
++-            KPI[schedule].update({'Number on Time': no_on_time})
++-            fraction_on_time = no_on_time / len(self.schedules[schedule])
++-            KPI[schedule].update({'Fraction on Time': fraction_on_time})
++-        #KPI['Cost'] = sum(prices_dictionary[job][self.schedules[schedule][job]['start']] for job in self.schedules[schedule])
++-        return KPI
++Index: Machine.py
++IDEA additional info:
++Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
++<+># main machine class\r\n# all machine submodules and intelligence happen here\r\nimport CONFIG\r\nfrom DataPoint import EstimationDataPoint\r\nfrom DataPoint import Shadow\r\nfrom MachineAgentHandler import MachineAgentHandler\r\nfrom MachineEventListener import MachineEventListener\r\nfrom MachineRecordKeeper import MachineRecordKeeper\r\nfrom MachineScheduleGenerator import MachineScheduleGenerator\r\nfrom PlatfromHashTable import PlatformHashTable\r\nfrom PlatformEntity import PlatformEntity\r\n\r\n\r\nclass Machine(PlatformEntity):\r\n    def __init__(self, platform):\r\n        # register platform\r\n        self.platform = platform\r\n\r\n        # Declare machine sub-modules\r\n        self.events_listener = MachineEventListener(self)\r\n        self.agents_handler = MachineAgentHandler(self)\r\n        self.records_keeper = MachineRecordKeeper(self)\r\n        self.strategizer = MachineScheduleGenerator(self)\r\n\r\n        # Tables for shadowing agent requests\r\n        self.price_requests_table = PlatformHashTable()\r\n\r\n        # request_id count\r\n        self._request_id = 0\r\n\r\n    # event response functions\r\n\r\n    # function to respond to job addition event\r\n    def on_job_added(self, machine_event):\r\n        # Fetch data to be requested (should get job datapoint)\r\n        job = machine_event.data\r\n\r\n        # create new estimation datapoint\r\n        new_estimate_datapoint = EstimationDataPoint.create_from_job(job)\r\n\r\n        # create a new request_id\r\n        current_request_id = CONFIG.NAME_REQUEST_ESTIMATION + self.request_id\r\n\r\n        # add the job to the shadow_jobs_table\r\n        shadow_job = Shadow(reference_id=job.my_id, extra_id=current_request_id)\r\n\r\n        # insert in HashTable\r\n        self.price_requests_table.insert(shadow_job)\r\n\r\n        # request agent for estimation\r\n        # take back request_id for tracking & logging\r\n        self.agents_handler.request_factory_agent(request_id=current_request_id, data=new_estimate_datapoint)\r\n\r\n    # function to respond to price estimation acquired event\r\n    def on_estimation_acquired(self, machine_event):\r\n        # remove request_id from HashTable (data_id should be job_id)\r\n        shadow_job = self.price_requests_table.remove(machine_event.data_id)\r\n        job_id = shadow_job.my_id\r\n\r\n        # prices should be of type EstimationDatapoint\r\n        prices_datapoint = machine_event.data\r\n\r\n        # record new price\r\n        self.records_keeper.add_prices(prices_datapoint, job_id=job_id)\r\n\r\n    def on_estimation_added(self, machine_event):\r\n        print(\"Step 1 and 2 complete\")\r\n        # TODO: Add job to record of non-scheduled jobs\r\n        pass\r\n\r\n    # function to register machine with platform\r\n    def register_in_platform(self):\r\n        self.my_id = self.platform.get_machine_id(self)\r\n\r\n        # pass platform (part of self) to agent handler\r\n        self.agents_handler.register_fcc(self)\r\n\r\n    # Helper Methods\r\n\r\n    @property\r\n    def request_id(self):\r\n        self._request_id += 1\r\n        return str(self._request_id)\r\n
++Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
++<+>UTF-8
++===================================================================
++diff --git a/Machine.py b/Machine.py
++--- a/Machine.py	(revision f344f9074cd8072b931ef7d8fb9c6a73e3f31a77)
+++++ b/Machine.py	(date 1678284904575)
++@@ -6,7 +6,6 @@
++ from MachineAgentHandler import MachineAgentHandler
++ from MachineEventListener import MachineEventListener
++ from MachineRecordKeeper import MachineRecordKeeper
++-from MachineScheduleGenerator import MachineScheduleGenerator
++ from PlatfromHashTable import PlatformHashTable
++ from PlatformEntity import PlatformEntity
++ 
++@@ -20,7 +19,6 @@
++         self.events_listener = MachineEventListener(self)
++         self.agents_handler = MachineAgentHandler(self)
++         self.records_keeper = MachineRecordKeeper(self)
++-        self.strategizer = MachineScheduleGenerator(self)
++ 
++         # Tables for shadowing agent requests
++         self.price_requests_table = PlatformHashTable()
++@@ -65,7 +63,6 @@
++ 
++     def on_estimation_added(self, machine_event):
++         print("Step 1 and 2 complete")
++-        # TODO: Add job to record of non-scheduled jobs
++         pass
++ 
++     # function to register machine with platform
+Index: .idea/shelf/Uncommitted_changes_before_Update_at_3_21_2023_12_50_AM__Changes_.xml
+===================================================================
+diff --git a/.idea/shelf/Uncommitted_changes_before_Update_at_3_21_2023_12_50_AM__Changes_.xml b/.idea/shelf/Uncommitted_changes_before_Update_at_3_21_2023_12_50_AM__Changes_.xml
+new file mode 100644
+--- /dev/null	(revision d457811082ee7146eb864bcc4c7fcfa49567db1f)
++++ b/.idea/shelf/Uncommitted_changes_before_Update_at_3_21_2023_12_50_AM__Changes_.xml	(revision d457811082ee7146eb864bcc4c7fcfa49567db1f)
+@@ -0,0 +1,4 @@
++<changelist name="Uncommitted_changes_before_Update_at_3_21_2023_12_50_AM_[Changes]" date="1679352625481" recycled="true" deleted="true">
++  <option name="PATH" value="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_3_21_2023_12_50_AM_[Changes]/shelved.patch" />
++  <option name="DESCRIPTION" value="Uncommitted changes before Update at 3/21/2023 12:50 AM [Changes]" />
++</changelist>
+\ No newline at end of file
+Index: .idea/workspace.xml
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+new file mode 100644
+--- /dev/null	(revision d457811082ee7146eb864bcc4c7fcfa49567db1f)
++++ b/.idea/workspace.xml	(revision d457811082ee7146eb864bcc4c7fcfa49567db1f)
+@@ -0,0 +1,423 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="AutoImportSettings">
++    <option name="autoReloadType" value="SELECTIVE" />
++  </component>
++  <component name="ChangeListManager">
++    <list default="true" id="bf3e0214-8eaa-4729-95e2-737c40c2f0f9" name="Changes" comment="Correct Enum values" />
++    <option name="SHOW_DIALOG" value="false" />
++    <option name="HIGHLIGHT_CONFLICTS" value="true" />
++    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
++    <option name="LAST_RESOLUTION" value="IGNORE" />
++  </component>
++  <component name="FileTemplateManagerImpl">
++    <option name="RECENT_TEMPLATES">
++      <list>
++        <option value="Python Script" />
++      </list>
++    </option>
++  </component>
++  <component name="Git.Settings">
++    <option name="RECENT_BRANCH_BY_REPOSITORY">
++      <map>
++        <entry key="$PROJECT_DIR$" value="Scheduling" />
++      </map>
++    </option>
++    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
++    <option name="RESET_MODE" value="MIXED" />
++  </component>
++  <component name="HighlightingSettingsPerFile">
++    <setting file="file://$PROJECT_DIR$/MachineRecordKeeper.py" root0="FORCE_HIGHLIGHTING" />
++  </component>
++  <component name="MarkdownSettingsMigration">
++    <option name="stateVersion" value="1" />
++  </component>
++  <component name="ProjectId" id="2MMYg2L4qp9HDgqChm4UXf4Y3qO" />
++  <component name="ProjectLevelVcsManager">
++    <ConfirmationsSetting value="2" id="Add" />
++  </component>
++  <component name="ProjectViewState">
++    <option name="hideEmptyMiddlePackages" value="true" />
++    <option name="showLibraryContents" value="true" />
++  </component>
++  <component name="PropertiesComponent"><![CDATA[{
++  "keyToString": {
++    "RunOnceActivity.OpenProjectViewOnStart": "true",
++    "RunOnceActivity.ShowReadmeOnStart": "true",
++    "last_opened_file_path": "D:/__TU-Dortmund/__Project/PG_WS22_23_Energy_Market_Trading/main.py"
++  },
++  "keyToStringList": {
++    "com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File": [
++      "Python"
++    ]
++  }
++}]]></component>
++  <component name="RecentsManager">
++    <key name="MoveFile.RECENT_KEYS">
++      <recent name="C:\Users\AHMEDHASSAN\AppData\Roaming\JetBrains\PyCharmCE2022.3\scratches" />
++      <recent name="D:\__TU-Dortmund\__Project\PG_WS22_23_Energy_Market_Trading\log" />
++    </key>
++  </component>
++  <component name="RunManager">
++    <configuration name="main" type="PythonConfigurationType" factoryName="Python">
++      <module name="PG_WS22_23_Energy_Market_Trading" />
++      <option name="INTERPRETER_OPTIONS" value="" />
++      <option name="PARENT_ENVS" value="true" />
++      <envs>
++        <env name="PYTHONUNBUFFERED" value="1" />
++      </envs>
++      <option name="SDK_HOME" value="C:\ProgramData\miniconda3\envs\PAS\python.exe" />
++      <option name="SDK_NAME" value="PAS (2)" />
++      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
++      <option name="IS_MODULE_SDK" value="false" />
++      <option name="ADD_CONTENT_ROOTS" value="true" />
++      <option name="ADD_SOURCE_ROOTS" value="true" />
++      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
++      <option name="PARAMETERS" value="" />
++      <option name="SHOW_COMMAND_LINE" value="false" />
++      <option name="EMULATE_TERMINAL" value="false" />
++      <option name="MODULE_MODE" value="false" />
++      <option name="REDIRECT_INPUT" value="false" />
++      <option name="INPUT_FILE" value="" />
++      <method v="2" />
++    </configuration>
++  </component>
++  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
++  <component name="TaskManager">
++    <task id="LOCAL-00001" summary="Refactor">
++      <created>1677497827009</created>
++      <option name="number" value="00001" />
++      <option name="presentableId" value="LOCAL-00001" />
++      <option name="project" value="LOCAL" />
++      <updated>1677497827009</updated>
++    </task>
++    <task id="LOCAL-00002" summary="Refactor">
++      <created>1677498615554</created>
++      <option name="number" value="00002" />
++      <option name="presentableId" value="LOCAL-00002" />
++      <option name="project" value="LOCAL" />
++      <updated>1677498615554</updated>
++    </task>
++    <task id="LOCAL-00003" summary="Add logging">
++      <created>1677498710568</created>
++      <option name="number" value="00003" />
++      <option name="presentableId" value="LOCAL-00003" />
++      <option name="project" value="LOCAL" />
++      <updated>1677498710568</updated>
++    </task>
++    <task id="LOCAL-00004" summary="Refactor">
++      <created>1677505743505</created>
++      <option name="number" value="00004" />
++      <option name="presentableId" value="LOCAL-00004" />
++      <option name="project" value="LOCAL" />
++      <updated>1677505743505</updated>
++    </task>
++    <task id="LOCAL-00005" summary="Add simulation params and refrence time">
++      <created>1677505789294</created>
++      <option name="number" value="00005" />
++      <option name="presentableId" value="LOCAL-00005" />
++      <option name="project" value="LOCAL" />
++      <updated>1677505789294</updated>
++    </task>
++    <task id="LOCAL-00006" summary="Change default ID">
++      <created>1677505819446</created>
++      <option name="number" value="00006" />
++      <option name="presentableId" value="LOCAL-00006" />
++      <option name="project" value="LOCAL" />
++      <updated>1677505819446</updated>
++    </task>
++    <task id="LOCAL-00007" summary="Simulate lots jobs and machines">
++      <created>1677505856003</created>
++      <option name="number" value="00007" />
++      <option name="presentableId" value="LOCAL-00007" />
++      <option name="project" value="LOCAL" />
++      <updated>1677505856003</updated>
++    </task>
++    <task id="LOCAL-00008" summary="Solve bug estimate_id int to string.&#10;Correct fcc to be declared in init as PlatformEntity">
++      <created>1677506017829</created>
++      <option name="number" value="00008" />
++      <option name="presentableId" value="LOCAL-00008" />
++      <option name="project" value="LOCAL" />
++      <updated>1677506017829</updated>
++    </task>
++    <task id="LOCAL-00009" summary="Refactor">
++      <created>1677506036849</created>
++      <option name="number" value="00009" />
++      <option name="presentableId" value="LOCAL-00009" />
++      <option name="project" value="LOCAL" />
++      <updated>1677506036849</updated>
++    </task>
++    <task id="LOCAL-00010" summary="Create random data for simulation">
++      <created>1677506064052</created>
++      <option name="number" value="00010" />
++      <option name="presentableId" value="LOCAL-00010" />
++      <option name="project" value="LOCAL" />
++      <updated>1677506064052</updated>
++    </task>
++    <task id="LOCAL-00011" summary="Resolve warnings for int to str">
++      <created>1677507335263</created>
++      <option name="number" value="00011" />
++      <option name="presentableId" value="LOCAL-00011" />
++      <option name="project" value="LOCAL" />
++      <updated>1677507335263</updated>
++    </task>
++    <task id="LOCAL-00012" summary="Refactor for common environment running">
++      <created>1677507822885</created>
++      <option name="number" value="00012" />
++      <option name="presentableId" value="LOCAL-00012" />
++      <option name="project" value="LOCAL" />
++      <updated>1677507822885</updated>
++    </task>
++    <task id="LOCAL-00013" summary="Change timedelta calculations based on TIME_INT_INTERVAL">
++      <created>1677508851224</created>
++      <option name="number" value="00013" />
++      <option name="presentableId" value="LOCAL-00013" />
++      <option name="project" value="LOCAL" />
++      <updated>1677508851224</updated>
++    </task>
++    <task active="true" id="Default" summary="Default task">
++      <changelist id="bf3e0214-8eaa-4729-95e2-737c40c2f0f9" name="Changes" comment="Change timedelta calculations based on TIME_INT_INTERVAL" />
++      <created>1677579031264</created>
++      <option name="number" value="Default" />
++      <option name="presentableId" value="Default" />
++      <updated>1677579031264</updated>
++    </task>
++    <task id="LOCAL-00014" summary="Add energy parameters">
++      <created>1677610388314</created>
++      <option name="number" value="00014" />
++      <option name="presentableId" value="LOCAL-00014" />
++      <option name="project" value="LOCAL" />
++      <updated>1677610388314</updated>
++    </task>
++    <task id="LOCAL-00015" summary="Add time margin after due time for price information">
++      <created>1677610813441</created>
++      <option name="number" value="00015" />
++      <option name="presentableId" value="LOCAL-00015" />
++      <option name="project" value="LOCAL" />
++      <updated>1677610813441</updated>
++    </task>
++    <task id="LOCAL-00016" summary="Rerfactor">
++      <created>1677611124339</created>
++      <option name="number" value="00016" />
++      <option name="presentableId" value="LOCAL-00016" />
++      <option name="project" value="LOCAL" />
++      <updated>1677611124339</updated>
++    </task>
++    <task id="LOCAL-00017" summary="Generate data as Tuples to add new jobs on random instead of sequential order">
++      <created>1677745901818</created>
++      <option name="number" value="00017" />
++      <option name="presentableId" value="LOCAL-00017" />
++      <option name="project" value="LOCAL" />
++      <updated>1677745901818</updated>
++    </task>
++    <task id="LOCAL-00018" summary="Shuffle generated data to distribute the load of adding jobs among machines uniformally.">
++      <created>1677761975047</created>
++      <option name="number" value="00018" />
++      <option name="presentableId" value="LOCAL-00018" />
++      <option name="project" value="LOCAL" />
++      <updated>1677761975047</updated>
++    </task>
++    <task id="LOCAL-00019" summary="Correct Price addition bug, Refactor">
++      <created>1678112398721</created>
++      <option name="number" value="00019" />
++      <option name="presentableId" value="LOCAL-00019" />
++      <option name="project" value="LOCAL" />
++      <updated>1678112398721</updated>
++    </task>
++    <task id="LOCAL-00020" summary="Fix job not storing bug">
++      <created>1678216999395</created>
++      <option name="number" value="00020" />
++      <option name="presentableId" value="LOCAL-00020" />
++      <option name="project" value="LOCAL" />
++      <updated>1678216999395</updated>
++    </task>
++    <task id="LOCAL-00021" summary="Refactor">
++      <created>1678269361388</created>
++      <option name="number" value="00021" />
++      <option name="presentableId" value="LOCAL-00021" />
++      <option name="project" value="LOCAL" />
++      <updated>1678269361388</updated>
++    </task>
++    <task id="LOCAL-00022" summary="Integrate support for priority (mainly in requests pushed to queues)">
++      <created>1678269540178</created>
++      <option name="number" value="00022" />
++      <option name="presentableId" value="LOCAL-00022" />
++      <option name="project" value="LOCAL" />
++      <updated>1678269540178</updated>
++    </task>
++    <task id="LOCAL-00023" summary="Fix get_job() not working bug">
++      <created>1678276281704</created>
++      <option name="number" value="00023" />
++      <option name="presentableId" value="LOCAL-00023" />
++      <option name="project" value="LOCAL" />
++      <updated>1678276281704</updated>
++    </task>
++    <task id="LOCAL-00024" summary="Create function to get time value as integer referenced to REF_DATETIME">
++      <created>1678293092244</created>
++      <option name="number" value="00024" />
++      <option name="presentableId" value="LOCAL-00024" />
++      <option name="project" value="LOCAL" />
++      <updated>1678293092244</updated>
++    </task>
++    <task id="LOCAL-00025" summary="Ignore all log files when committing">
++      <created>1678293299746</created>
++      <option name="number" value="00025" />
++      <option name="presentableId" value="LOCAL-00025" />
++      <option name="project" value="LOCAL" />
++      <updated>1678293299746</updated>
++    </task>
++    <task id="LOCAL-00026" summary="Facilitate faster get_job() by implementing an index Hashtable.">
++      <created>1678705437756</created>
++      <option name="number" value="00026" />
++      <option name="presentableId" value="LOCAL-00026" />
++      <option name="project" value="LOCAL" />
++      <updated>1678705437756</updated>
++    </task>
++    <task id="LOCAL-00027" summary="Implement Epoch Time in CONFIG, DataGenerator">
++      <created>1678718607016</created>
++      <option name="number" value="00027" />
++      <option name="presentableId" value="LOCAL-00027" />
++      <option name="project" value="LOCAL" />
++      <updated>1678718607016</updated>
++    </task>
++    <task id="LOCAL-00028" summary="Job attributes (e.g. constraints) changed to Enum">
++      <created>1678729135376</created>
++      <option name="number" value="00028" />
++      <option name="presentableId" value="LOCAL-00028" />
++      <option name="project" value="LOCAL" />
++      <updated>1678729135376</updated>
++    </task>
++    <task id="LOCAL-00029" summary="Refactor">
++      <created>1679352510341</created>
++      <option name="number" value="00029" />
++      <option name="presentableId" value="LOCAL-00029" />
++      <option name="project" value="LOCAL" />
++      <updated>1679352510341</updated>
++    </task>
++    <task id="LOCAL-00030" summary="Merge">
++      <created>1679352681344</created>
++      <option name="number" value="00030" />
++      <option name="presentableId" value="LOCAL-00030" />
++      <option name="project" value="LOCAL" />
++      <updated>1679352681344</updated>
++    </task>
++    <task id="LOCAL-00031" summary="Correct Enum values">
++      <created>1679352826977</created>
++      <option name="number" value="00031" />
++      <option name="presentableId" value="LOCAL-00031" />
++      <option name="project" value="LOCAL" />
++      <updated>1679352826977</updated>
++    </task>
++    <option name="localTasksCounter" value="32" />
++    <servers />
++  </component>
++  <component name="Vcs.Log.Tabs.Properties">
++    <option name="TAB_STATES">
++      <map>
++        <entry key="200d8f1b-dc12-4106-882a-a7992c4c8318">
++          <value>
++            <State>
++              <option name="SHOW_ONLY_AFFECTED_CHANGES" value="true" />
++              <option name="FILTERS">
++                <map>
++                  <entry key="branch">
++                    <value>
++                      <list>
++                        <option value="HEAD" />
++                      </list>
++                    </value>
++                  </entry>
++                  <entry key="roots">
++                    <value>
++                      <list>
++                        <option value="$PROJECT_DIR$" />
++                      </list>
++                    </value>
++                  </entry>
++                </map>
++              </option>
++            </State>
++          </value>
++        </entry>
++        <entry key="MAIN">
++          <value>
++            <State>
++              <option name="FILTERS">
++                <map>
++                  <entry key="branch">
++                    <value>
++                      <list>
++                        <option value="origin/Scheduling" />
++                      </list>
++                    </value>
++                  </entry>
++                </map>
++              </option>
++            </State>
++          </value>
++        </entry>
++      </map>
++    </option>
++    <option name="OPEN_GENERIC_TABS">
++      <map>
++        <entry key="200d8f1b-dc12-4106-882a-a7992c4c8318" value="TOOL_WINDOW" />
++      </map>
++    </option>
++  </component>
++  <component name="VcsManagerConfiguration">
++    <MESSAGE value="Add simulation params and refrence time" />
++    <MESSAGE value="Change default ID" />
++    <MESSAGE value="Simulate lots jobs and machines" />
++    <MESSAGE value="Solve bug estimate_id int to string.&#10;Correct fcc to be declared in init as PlatformEntity" />
++    <MESSAGE value="Create random data for simulation" />
++    <MESSAGE value="Resolve warnings for int to str" />
++    <MESSAGE value="Refactor for common environment running" />
++    <MESSAGE value="Change timedelta calculations based on TIME_INT_INTERVAL" />
++    <MESSAGE value="Add energy parameters" />
++    <MESSAGE value="Add time margin after due time for price information" />
++    <MESSAGE value="Rerfactor" />
++    <MESSAGE value="Generate data as Tuples to add new jobs on random instead of sequential order" />
++    <MESSAGE value="Shuffle generated data to distribute the load of adding jobs among machines uniformally." />
++    <MESSAGE value="Correct Price addition bug, Refactor" />
++    <MESSAGE value="Fix job not storing bug" />
++    <MESSAGE value="Integrate support for priority (mainly in requests pushed to queues)" />
++    <MESSAGE value="Fix get_job() not working bug" />
++    <MESSAGE value="Create function to get time value as integer referenced to REF_DATETIME" />
++    <MESSAGE value="Ignore all log files when committing" />
++    <MESSAGE value="Facilitate faster get_job() by implementing an index Hashtable." />
++    <MESSAGE value="Implement Epoch Time in CONFIG, DataGenerator" />
++    <MESSAGE value="Job attributes (e.g. constraints) changed to Enum" />
++    <MESSAGE value="Refactor" />
++    <MESSAGE value="Merge" />
++    <MESSAGE value="Correct Enum values" />
++    <option name="LAST_COMMIT_MESSAGE" value="Correct Enum values" />
++  </component>
++  <component name="XDebuggerManager">
++    <breakpoint-manager>
++      <breakpoints>
++        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
++          <url>file://$PROJECT_DIR$/smard_de.py</url>
++          <line>3</line>
++          <option name="timeStamp" value="11" />
++        </line-breakpoint>
++        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
++          <url>file://$APPLICATION_CONFIG_DIR$/scratches/Pyomo_cost1.py</url>
++          <line>37</line>
++          <option name="timeStamp" value="77" />
++        </line-breakpoint>
++        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
++          <url>file://C:/ProgramData/miniconda3/envs/PAS/Lib/site-packages/pyomo/core/base/indexed_component.py</url>
++          <line>787</line>
++          <option name="timeStamp" value="99" />
++        </line-breakpoint>
++      </breakpoints>
++      <default-breakpoints>
++        <breakpoint type="python-exception">
++          <properties notifyOnTerminate="true" exception="BaseException">
++            <option name="notifyOnTerminate" value="true" />
++          </properties>
++        </breakpoint>
++      </default-breakpoints>
++    </breakpoint-manager>
++  </component>
++</project>
+\ No newline at end of file
+Index: SchedulingStrategies/EmpiricalScheduling.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/SchedulingStrategies/EmpiricalScheduling.py b/SchedulingStrategies/EmpiricalScheduling.py
+deleted file mode 100644
+--- a/SchedulingStrategies/EmpiricalScheduling.py	(revision fbb4a09593098ce0b44030585375f2e5f525c34a)
++++ /dev/null	(revision fbb4a09593098ce0b44030585375f2e5f525c34a)
+@@ -1,69 +0,0 @@
+-# Empirical scheduling based on examples found at
+-# https://jckantor.github.io/ND-Pyomo-Cookbook/notebooks/04.02-Machine-Bottleneck.html#empirical-scheduling
+-
+-from CONFIG import JobConstraint
+-
+-
+-def ordered(jobs, order):
+-    """Schedule a dictionary of jobs on a single machine in a specified order."""
+-    start = 0
+-    finish = 0
+-    schedule = {}
+-    for job in order:
+-        start = max(jobs[job][JobConstraint.TIME_READY], finish)
+-        finish = start + jobs[job][JobConstraint.TIME_PROCESSING]
+-        schedule[job] = {'TIME_START': start, 'TIME_FINISH': finish}
+-    return schedule
+-
+-
+-def first_in_first_out(jobs):
+-    order_by_release = sorted(jobs, key=lambda job: jobs[job][JobConstraint.TIME_READY])
+-    return ordered(jobs, order_by_release)
+-
+-
+-def earliest_due_date_first(jobs):
+-    schedule = {}
+-    unfinished_jobs = set(jobs.keys())
+-    start = 0
+-    while len(unfinished_jobs) > 0:
+-        start = max(start, min(jobs[job][JobConstraint.TIME_READY] for job in unfinished_jobs))
+-        edd = {job: jobs[job][JobConstraint.TIME_DEADLINE] for job in unfinished_jobs if
+-               jobs[job][JobConstraint.TIME_READY] <= start}
+-        job = min(edd, key=edd.get)
+-        finish = start + jobs[job][JobConstraint.TIME_PROCESSING]
+-        unfinished_jobs.remove(job)
+-        schedule[job] = {'TIME_START': start, 'TIME_FINISH': finish}
+-        start = finish
+-    return schedule
+-
+-
+-def last_in_first_out(jobs):
+-    schedule = {}
+-    unfinished_jobs = set(jobs.keys())
+-    start = 0
+-    while len(unfinished_jobs) > 0:
+-        start = max(start, min(jobs[job][JobConstraint.TIME_READY] for job in unfinished_jobs))
+-        lifo = {job: jobs[job][JobConstraint.TIME_READY] for job in unfinished_jobs if
+-                jobs[job][JobConstraint.TIME_READY] <= start}
+-        job = max(lifo, key=lifo.get)
+-        finish = start + jobs[job][JobConstraint.TIME_PROCESSING]
+-        unfinished_jobs.remove(job)
+-        schedule[job] = {'TIME_START': start, 'TIME_FINISH': finish}
+-        start = finish
+-    return schedule
+-
+-
+-def shortest_processing_time(jobs):
+-    schedule = {}
+-    unfinished_jobs = set(jobs.keys())
+-    start = 0
+-    while len(unfinished_jobs) > 0:
+-        start = max(start, min(jobs[job][JobConstraint.TIME_READY] for job in unfinished_jobs))
+-        spt = {job: jobs[job][JobConstraint.TIME_PROCESSING] for job in unfinished_jobs if
+-               jobs[job][JobConstraint.TIME_READY] <= start}
+-        job = min(spt, key=spt.get)
+-        finish = start + jobs[job][JobConstraint.TIME_PROCESSING]
+-        unfinished_jobs.remove(job)
+-        schedule[job] = {'TIME_START': start, 'TIME_FINISH': finish}
+-        start = finish
+-    return schedule
+Index: SchedulingStrategies/PyomoScheduling.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/SchedulingStrategies/PyomoScheduling.py b/SchedulingStrategies/PyomoScheduling.py
+deleted file mode 100644
+--- a/SchedulingStrategies/PyomoScheduling.py	(revision fbb4a09593098ce0b44030585375f2e5f525c34a)
++++ /dev/null	(revision fbb4a09593098ce0b44030585375f2e5f525c34a)
+@@ -1,64 +0,0 @@
+-# Solver based scheduling based on examples found at
+-# https://jckantor.github.io/ND-Pyomo-Cookbook/notebooks/04.02-Machine-Bottleneck.html#pyomo-model
+-import CONFIG
+-from CONFIG import JobConstraint
+-from pyomo.environ import *
+-from pyomo.gdp import *
+-
+-
+-def opt_schedule(JOBS, order_start):
+-    # create model
+-    m = ConcreteModel()
+-
+-    # NOTE: The introduction of resolution is necessary to limit the decision space of the solver to a reasonable range.
+-    # factor to get hourly resolution
+-    resolution = CONFIG.TIME_INT_INTERVAL * CONFIG.TIME_INTERVAL
+-
+-    # index set to simplify notation
+-    m.J = Set(initialize=JOBS.keys())
+-    m.PAIRS = Set(initialize=m.J * m.J, dimen=2, filter=lambda m, j, k: j < k)
+-
+-    # upper bounds on how long it would take to process all jobs
+-    tmax = (max([JOBS[j][JobConstraint.TIME_READY] for j in m.J]) +
+-            sum([JOBS[j][JobConstraint.TIME_PROCESSING] for j in m.J])) / resolution
+-    tmin = min([JOBS[j][JobConstraint.TIME_READY] for j in m.J]) / resolution
+-
+-    # initialize the m.start variable with a 'best guess'
+-    def initialize_m_start(m, j):
+-        return order_start[j]['TIME_START']/resolution
+-
+-    # decision variables
+-    m.start = Var(m.J, domain=PositiveIntegers, bounds=(tmin, tmax), initialize=initialize_m_start)
+-    m.pastdue = Var(m.J, domain=PositiveIntegers, bounds=(tmin, tmax))
+-    m.early = Var(m.J, domain=PositiveIntegers, bounds=(tmin, tmax))
+-
+-    # additional decision variables for use in the objecive
+-    m.makespan = Var(domain=PositiveIntegers, bounds=(tmin, tmax))
+-    m.maxpastdue = Var(domain=PositiveIntegers, bounds=(tmin, tmax))
+-    m.ispastdue = Var(m.J, domain=Binary)
+-
+-    # objective function
+-    m.OBJ = Objective(expr=sum([m.pastdue[j] for j in m.J]), sense=minimize)
+-
+-    # constraints
+-    m.c1 = Constraint(m.J, rule=lambda m, j: m.start[j] >= JOBS[j][JobConstraint.TIME_READY] / resolution)
+-    m.c2 = Constraint(m.J, rule=lambda m, j: m.start[j] + JOBS[j][JobConstraint.TIME_PROCESSING] / resolution +
+-                      m.early[j] == JOBS[j][JobConstraint.TIME_DEADLINE] / resolution + m.pastdue[j])
+-    m.c3 = Disjunction(m.PAIRS, rule=lambda m, j, k:
+-                       [m.start[j] + JOBS[j][JobConstraint.TIME_PROCESSING] / resolution <= m.start[k],
+-                        m.start[k] + JOBS[k][JobConstraint.TIME_PROCESSING] / resolution <= m.start[j]])
+-
+-    m.c4 = Constraint(m.J, rule=lambda m, j: m.pastdue[j] <= m.maxpastdue)
+-    m.c5 = Constraint(m.J, rule=lambda m, j: m.start[j] + JOBS[j][JobConstraint.TIME_PROCESSING] / resolution
+-                      <= m.makespan * resolution)
+-    m.c6 = Constraint(m.J, rule=lambda m, j: m.pastdue[j] <= tmax * m.ispastdue[j])
+-
+-    TransformationFactory('gdp.hull').apply_to(m)
+-    SolverFactory('glpk').solve(m).write()
+-
+-    schedule = {}
+-    for j in m.J:
+-        schedule[j] = {'TIME_START': m.start[j]() * resolution,
+-                       'TIME_FINISH': m.start[j]() * resolution + JOBS[j][JobConstraint.TIME_PROCESSING]}
+-
+-    return schedule
